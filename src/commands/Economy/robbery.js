@@ -3,6 +3,7 @@ import { errorEmbed, successEmbed } from '../../utils/embeds.js';
 import { getEconomyData, setEconomyData } from '../../utils/economy.js';
 import { withErrorHandling, createError, ErrorTypes } from '../../utils/errorHandler.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { requireFuel, consumeFuel } from '../../utils/fuel.js';
 
 const COOLDOWN = 90 * 60 * 1000;
 const JAIL_TIME = 2 * 60 * 60 * 1000;
@@ -73,11 +74,15 @@ export default {
                 'No gun in your inventory. Hit `/shop` and get a black market piece first.');
         }
 
+        // Need a getaway car with gas.
+        requireFuel(userData, '`/robbery`');
+
         const finalRisk = Math.max(0.05, target.risk - weapon.riskCut);
         const success = Math.random() > finalRisk;
 
         userData.cooldowns = userData.cooldowns || {};
         userData.cooldowns.robbery = now;
+        consumeFuel(userData);
 
         if (success) {
             const base = Math.floor(Math.random() * (target.max - target.min + 1)) + target.min;

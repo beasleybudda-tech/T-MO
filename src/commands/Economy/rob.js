@@ -4,6 +4,7 @@ import { getEconomyData, setEconomyData } from '../../utils/economy.js';
 import { withErrorHandling, createError, ErrorTypes } from '../../utils/errorHandler.js';
 import { MessageTemplates } from '../../utils/messageTemplates.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { requireFuel, consumeFuel } from '../../utils/fuel.js';
 
 const ROB_COOLDOWN = 4 * 60 * 60 * 1000;
 const BASE_ROB_SUCCESS_CHANCE = 0.25;
@@ -75,6 +76,9 @@ export default {
                 );
             }
 
+            // Need a getaway car with gas.
+            requireFuel(robberData, '`/rob`');
+
             if (victimData.wallet < 500) {
                 throw createError(
                     "Victim too poor",
@@ -99,6 +103,9 @@ export default {
                     ],
                 });
             }
+
+            // Burn fuel on the attempt.
+            consumeFuel(robberData);
 
             const isSuccessful = Math.random() < BASE_ROB_SUCCESS_CHANCE;
             let resultEmbed;

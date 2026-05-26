@@ -3,6 +3,7 @@ import { errorEmbed, successEmbed } from '../../utils/embeds.js';
 import { getEconomyData, setEconomyData } from '../../utils/economy.js';
 import { withErrorHandling, createError, ErrorTypes } from '../../utils/errorHandler.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { requireFuel, consumeFuel, fuelGauge, getFuel } from '../../utils/fuel.js';
 
 const COOLDOWN = 45 * 60 * 1000;
 const JAIL_TIME = 60 * 60 * 1000;
@@ -45,11 +46,18 @@ export default {
             throw createError('Cooldown', ErrorTypes.RATE_LIMIT, `Heat's still on. Wait ${m} more minutes.`);
         }
 
+        // Need gas in the getaway car.
+        requireFuel(userData, '`/chopshop`');
+
         const car = CARS[Math.floor(Math.random() * CARS.length)];
         const success = Math.random() > car.risk;
 
         userData.cooldowns = userData.cooldowns || {};
         userData.cooldowns.chopshop = now;
+
+        // Boosting a car burns fuel either way — win or lose.
+        consumeFuel(userData);
+        const fuelLeft = getFuel(userData);
 
         if (success) {
             const payout = Math.floor(Math.random() * (car.max - car.min + 1)) + car.min;
@@ -58,7 +66,7 @@ export default {
             await InteractionHelper.safeEditReply(interaction, {
                 embeds: [successEmbed(
                     '🔧 Chop Shop Payout',
-                    `You boosted a **${car.name}** (Tier ${car.tier}) and dropped it at the chop shop.\nPaid out: **$${payout.toLocaleString()}**`
+                    `You boosted a **${car.name}** (Tier ${car.tier}) and dropped it at the chop shop.\nPaid out: **$${payout.toLocaleString()}**\n\n⛽ Fuel: ${fuelGauge(fuelLeft)}`
                 )]
             });
         } else {
@@ -69,7 +77,7 @@ export default {
             await InteractionHelper.safeEditReply(interaction, {
                 embeds: [errorEmbed(
                     '🚓 Busted',
-                    `LSPD caught you boosting a **${car.name}**. Fined **$${fine.toLocaleString()}** and jailed for 1 hour.`
+                    `LSPD caught you boosting a **${car.name}**. Fined **$${fine.toLocaleString()}** and jailed for 1 hour.\n\n⛽ Fuel: ${fuelGauge(fuelLeft)}`
                 )]
             });
         }
