@@ -4,6 +4,8 @@ import { getEconomyData, setEconomyData } from '../../utils/economy.js';
 import { withErrorHandling, createError, ErrorTypes } from '../../utils/errorHandler.js';
 import { MessageTemplates } from '../../utils/messageTemplates.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
+import { hasFuel, consumeFuel, outOfFuelMessage } from '../../utils/fuel.js';
+import { buildRefuelRow } from '../../interactions/buttons/refuel.js';
 
 const CRIME_COOLDOWN = 60 * 60 * 1000;
 const MIN_CRIME_AMOUNT = 100;
@@ -82,6 +84,14 @@ export default {
                 );
             }
 
+            // Every crime needs a getaway — burn fuel.
+            if (!hasFuel(userData)) {
+                return await InteractionHelper.safeEditReply(interaction, {
+                    embeds: [warningEmbed('⛽ Out of fuel', outOfFuelMessage('`/crime`'))],
+                    components: [buildRefuelRow()],
+                });
+            }
+
             const isSuccess = Math.random() > crime.risk;
             const amountEarned = isSuccess
                 ? Math.floor(Math.random() * (crime.max - crime.min + 1)) + crime.min
@@ -89,6 +99,7 @@ export default {
 
             userData.cooldowns = userData.cooldowns || {};
             userData.cooldowns.crime = now;
+            consumeFuel(userData);
 
             if (isSuccess) {
                 userData.wallet = (userData.wallet || 0) + amountEarned;
