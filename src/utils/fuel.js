@@ -41,9 +41,19 @@ export function fuelGauge(level) {
 }
 
 /**
- * Throws a RATE_LIMIT-style error if the user does not have enough fuel to run
- * the given car-related command. Does NOT consume fuel — call consumeFuel() after
- * the command logic succeeds (or unconditionally, your call).
+ * Returns true if the user has enough fuel for one car-related command.
+ * Use this when you want to render a custom out-of-fuel embed (e.g. with a
+ * refuel button) instead of letting requireFuel() throw.
+ */
+export function hasFuel(userData) {
+    return getFuel(userData) >= FUEL_PER_COMMAND;
+}
+
+/**
+ * Throws a VALIDATION error if the user does not have enough fuel to run the
+ * given car-related command. Does NOT consume fuel — call consumeFuel() after
+ * the command logic succeeds (or unconditionally, your call). Prefer hasFuel()
+ * + a custom embed when you want to attach a refuel button.
  */
 export function requireFuel(userData, commandLabel = 'this') {
     const fuel = getFuel(userData);
@@ -56,6 +66,14 @@ export function requireFuel(userData, commandLabel = 'this') {
         );
     }
     return fuel;
+}
+
+/**
+ * Helper that builds the standard "out of fuel" embed body. Pair with
+ * buildRefuelRow() from interactions/buttons/refuel.js for a one-click refuel.
+ */
+export function outOfFuelMessage(commandLabel) {
+    return `⛽ Your tank is empty. Hit \`/gasstations refuel\` (or use the button below) before running ${commandLabel}.`;
 }
 
 /**

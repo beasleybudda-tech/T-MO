@@ -11,6 +11,7 @@ import {
     fuelGauge,
     refuelTank,
 } from '../../utils/fuel.js';
+import { buildRefuelRow } from '../../interactions/buttons/refuel.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -52,12 +53,14 @@ export default {
             const body =
                 `${fuelGauge(fuel)}\n\n` +
                 (fuel === 0
-                    ? '🚨 Tank is **empty**. Car-related commands are blocked until you `/gasstations refuel`.'
+                    ? '🚨 Tank is **empty**. Car-related commands are blocked until you refuel.'
                     : fuel <= 2
                         ? '⚠️ Running low. Better hit a pump soon.'
                         : '✅ You\'re good to roll.');
+            const components = fuel < TANK_CAPACITY ? [buildRefuelRow()] : [];
             return await InteractionHelper.safeEditReply(interaction, {
                 embeds: [infoEmbed('⛽ Fuel Status', body)],
+                components,
             });
         }
 

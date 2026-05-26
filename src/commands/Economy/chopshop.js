@@ -3,7 +3,9 @@ import { errorEmbed, successEmbed } from '../../utils/embeds.js';
 import { getEconomyData, setEconomyData } from '../../utils/economy.js';
 import { withErrorHandling, createError, ErrorTypes } from '../../utils/errorHandler.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { requireFuel, consumeFuel, fuelGauge, getFuel } from '../../utils/fuel.js';
+import { hasFuel, consumeFuel, fuelGauge, getFuel, outOfFuelMessage } from '../../utils/fuel.js';
+import { buildRefuelRow } from '../../interactions/buttons/refuel.js';
+import { warningEmbed } from '../../utils/embeds.js';
 
 const COOLDOWN = 45 * 60 * 1000;
 const JAIL_TIME = 60 * 60 * 1000;
@@ -47,7 +49,12 @@ export default {
         }
 
         // Need gas in the getaway car.
-        requireFuel(userData, '`/chopshop`');
+        if (!hasFuel(userData)) {
+            return await InteractionHelper.safeEditReply(interaction, {
+                embeds: [warningEmbed('⛽ Out of fuel', outOfFuelMessage('`/chopshop`'))],
+                components: [buildRefuelRow()],
+            });
+        }
 
         const car = CARS[Math.floor(Math.random() * CARS.length)];
         const success = Math.random() > car.risk;
@@ -74,11 +81,14 @@ export default {
             userData.wallet = Math.max(0, (userData.wallet || 0) - fine);
             userData.jailedUntil = now + JAIL_TIME;
             await setEconomyData(client, guildId, userId, userData);
+            // If the bust left them empty, offer a one-click refuel.
+            const components = fuelLeft === 0 ? [buildRefuelRow()] : [];
             await InteractionHelper.safeEditReply(interaction, {
                 embeds: [errorEmbed(
                     '🚓 Busted',
                     `LSPD caught you boosting a **${car.name}**. Fined **$${fine.toLocaleString()}** and jailed for 1 hour.\n\n⛽ Fuel: ${fuelGauge(fuelLeft)}`
-                )]
+                )],
+                components,
             });
         }
     }, { command: 'chopshop' })
